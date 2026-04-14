@@ -32,6 +32,7 @@ ROLE_THRESHOLDS = CONFIG['ROLE_THRESHOLDS']
 ROLES_EXCEPTIONS = CONFIG.get('ROLES_EXCEPTIONS', [])  # Roles that should not be removed by rolepurge
 MD5_CHECK_STATUS = CONFIG['MD5_CHECK_STATUS']
 MD5_ACC_AGE_NOTIFICATION_LIMIT = CONFIG['MD5_ACC_AGE_NOTIFICATION_LIMIT']
+BOT_ROLE = CONFIG['BOT_ROLE']
 
 # Bot configuration
 intents = discord.Intents.default()
@@ -147,6 +148,20 @@ async def on_message(message):
     await check_thresholds(message.author, ping_data[author_id])
     await save_data()
     await bot.process_commands(message)
+
+@bot.event
+async def on_member_update(before: discord.Member, after: discord.Member):
+    bot_role_id = BOT_ROLE
+    had_role = any(r.id == bot_role_id for r in before.roles)
+    has_role = any(r.id == bot_role_id for r in after.roles)
+
+    if not had_role and has_role:
+        log_channel = bot.get_channel(LOG_CHANNEL_ID)
+        if log_channel:
+            await log_channel.send(
+                f"User {after.mention} picked bot role, user will now be removed."
+            )
+        await after.guild.ban(after, reason="Autoban - bot role selected", delete_message_seconds=0)
 
 async def check_thresholds(user, user_data):
     channel = bot.get_channel(PING_LOG_CHANNEL_ID)
