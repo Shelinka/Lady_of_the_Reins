@@ -161,7 +161,11 @@ async def on_member_update(before: discord.Member, after: discord.Member):
             await log_channel.send(
                 f"User {after.mention} picked bot role, user will now be removed."
             )
-        await after.guild.ban(after, reason="Autoban - bot role selected", delete_message_seconds=0)
+        try:
+            await after.send("Hi, you have been removed from Lord of the Reins Discord server due to bot detection. In case this was a false positive you can re-join. Make sure to pick the correct roles and avoid picking the bot role.")
+        except discord.Forbidden:
+            pass
+        await after.guild.kick(after)
 
 async def check_thresholds(user, user_data):
     channel = bot.get_channel(PING_LOG_CHANNEL_ID)
